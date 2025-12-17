@@ -62,6 +62,9 @@ const Contact = () => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   useEffect(() => {
+    // Initialize EmailJS with public key
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
       { threshold: 0.1 }
@@ -76,21 +79,25 @@ const Contact = () => {
     setIsSubmitting(true);
 
     try {
-      // EmailJS parameters
+      // EmailJS template parameters - these should match your EmailJS template variables
       const templateParams = {
         from_name: formData.name,
         from_email: formData.email,
         message: formData.message,
         to_name: "Roshan",
+        reply_to: formData.email,
       };
 
-      // Send email using EmailJS
-      await emailjs.send(
+      console.log('Sending email with params:', templateParams);
+
+      // Send email using EmailJS (no need to pass public key again after init)
+      const response = await emailjs.send(
         EMAILJS_SERVICE_ID,
         EMAILJS_TEMPLATE_ID,
-        templateParams,
-        EMAILJS_PUBLIC_KEY
+        templateParams
       );
+
+      console.log('EmailJS Response:', response);
 
       // Success notification
       toast({
@@ -100,13 +107,15 @@ const Contact = () => {
 
       // Reset form
       setFormData({ name: "", email: "", message: "" });
-    } catch (error) {
+    } catch (error: any) {
       console.error("EmailJS Error:", error);
       
-      // Error notification
+      // Detailed error notification
+      const errorMessage = error?.text || error?.message || "Something went wrong";
+      
       toast({
         title: "Failed to send message ❌",
-        description: "Something went wrong. Please try again or contact me directly via email.",
+        description: `${errorMessage}. Please try again or contact me directly via email.`,
         variant: "destructive",
       });
     } finally {
