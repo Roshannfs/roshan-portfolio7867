@@ -278,6 +278,9 @@ const Contact = () => {
                   />
                 </div>
 
+                {/* Hidden email field for EmailJS template */}
+                <input type="hidden" name="email" value={formData.email} />
+
                 {/* Message Field */}
                 <div className="relative">
                   <label
