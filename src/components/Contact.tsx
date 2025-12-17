@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Mail, Phone, MapPin, Linkedin, Github, Send, Sparkles, ArrowUpRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,7 @@ const EMAILJS_PUBLIC_KEY = 'N6gh301lEzRl8oi2G';
 
 const Contact = () => {
   const { toast } = useToast();
+  const formRef = useRef<HTMLFormElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -78,43 +79,43 @@ const Contact = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
+    if (!formRef.current) {
+      console.error('Form reference is null');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      // EmailJS template parameters - these should match your EmailJS template variables
-      const templateParams = {
-        from_name: formData.name,
-        from_email: formData.email,
-        message: formData.message,
-        to_name: "Roshan",
-        reply_to: formData.email,
-      };
+      console.log('Submitting form with data:', formData);
 
-      console.log('Sending email with params:', templateParams);
-
-      // Send email using EmailJS (no need to pass public key again after init)
-      const response = await emailjs.send(
+      // Using sendForm method which directly sends form data
+      const response = await emailjs.sendForm(
         EMAILJS_SERVICE_ID,
         EMAILJS_TEMPLATE_ID,
-        templateParams
+        formRef.current,
+        EMAILJS_PUBLIC_KEY
       );
 
       console.log('EmailJS Response:', response);
 
       // Success notification
       toast({
-        title: "Message Sent! 🎉",
+        title: "Message Sent! \ud83c\udf89",
         description: "Thank you for reaching out. I'll get back to you soon.",
       });
 
       // Reset form
       setFormData({ name: "", email: "", message: "" });
+      formRef.current.reset();
     } catch (error: any) {
       console.error("EmailJS Error:", error);
+      console.error("Error details:", error.text, error.status);
       
       // Detailed error notification
       const errorMessage = error?.text || error?.message || "Something went wrong";
       
       toast({
-        title: "Failed to send message ❌",
+        title: "Failed to send message \u274c",
         description: `${errorMessage}. Please try again or contact me directly via email.`,
         variant: "destructive",
       });
@@ -224,7 +225,7 @@ const Contact = () => {
           <div className={`transition-all duration-1000 delay-400 ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-10"}`}>
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-r from-primary via-secondary to-accent rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity" />
-              <form onSubmit={handleSubmit} className="relative space-y-6 p-8 bg-card/80 backdrop-blur-sm rounded-2xl border border-border">
+              <form ref={formRef} onSubmit={handleSubmit} className="relative space-y-6 p-8 bg-card/80 backdrop-blur-sm rounded-2xl border border-border">
                 {/* Name Field */}
                 <div className="relative">
                   <label
@@ -239,6 +240,7 @@ const Contact = () => {
                   </label>
                   <Input
                     id="name"
+                    name="from_name"
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -264,6 +266,7 @@ const Contact = () => {
                   </label>
                   <Input
                     id="email"
+                    name="from_email"
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -289,6 +292,7 @@ const Contact = () => {
                   </label>
                   <Textarea
                     id="message"
+                    name="message"
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     onFocus={() => setFocusedField("message")}
