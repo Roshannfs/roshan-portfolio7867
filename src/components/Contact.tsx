@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Mail, Phone, MapPin, Linkedin, Github, Send, Sparkles, ArrowUpRight } from "lucide-react";
+import { Mail, Phone, MapPin, Linkedin, Github, Send, Sparkles, ArrowUpRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import emailjs from '@emailjs/browser';
 
 const contactInfo = [
   {
@@ -44,9 +45,15 @@ const socialLinks = [
   },
 ];
 
+// EmailJS Configuration
+const EMAILJS_SERVICE_ID = 'service_qvo0u1v';
+const EMAILJS_TEMPLATE_ID = 'template_cb4r3f9';
+const EMAILJS_PUBLIC_KEY = 'N6gh301lEzRl8oi2G';
+
 const Contact = () => {
   const { toast } = useToast();
   const [isVisible, setIsVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -64,13 +71,47 @@ const Contact = () => {
     return () => observer.disconnect();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Message Sent! 🎉",
-      description: "Thank you for reaching out. I'll get back to you soon.",
-    });
-    setFormData({ name: "", email: "", message: "" });
+    setIsSubmitting(true);
+
+    try {
+      // EmailJS parameters
+      const templateParams = {
+        from_name: formData.name,
+        from_email: formData.email,
+        message: formData.message,
+        to_name: "Roshan",
+      };
+
+      // Send email using EmailJS
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        templateParams,
+        EMAILJS_PUBLIC_KEY
+      );
+
+      // Success notification
+      toast({
+        title: "Message Sent! 🎉",
+        description: "Thank you for reaching out. I'll get back to you soon.",
+      });
+
+      // Reset form
+      setFormData({ name: "", email: "", message: "" });
+    } catch (error) {
+      console.error("EmailJS Error:", error);
+      
+      // Error notification
+      toast({
+        title: "Failed to send message ❌",
+        description: "Something went wrong. Please try again or contact me directly via email.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -195,6 +236,7 @@ const Contact = () => {
                     onFocus={() => setFocusedField("name")}
                     onBlur={() => setFocusedField(null)}
                     required
+                    disabled={isSubmitting}
                     className="bg-background/50 border-border focus:border-primary h-12 pt-2"
                   />
                 </div>
@@ -219,6 +261,7 @@ const Contact = () => {
                     onFocus={() => setFocusedField("email")}
                     onBlur={() => setFocusedField(null)}
                     required
+                    disabled={isSubmitting}
                     className="bg-background/50 border-border focus:border-primary h-12 pt-2"
                   />
                 </div>
@@ -242,16 +285,31 @@ const Contact = () => {
                     onFocus={() => setFocusedField("message")}
                     onBlur={() => setFocusedField(null)}
                     required
+                    disabled={isSubmitting}
                     rows={5}
                     className="bg-background/50 border-border focus:border-primary resize-none pt-6"
                   />
                 </div>
 
                 {/* Submit Button */}
-                <Button type="submit" size="lg" className="w-full group relative overflow-hidden">
+                <Button 
+                  type="submit" 
+                  size="lg" 
+                  className="w-full group relative overflow-hidden"
+                  disabled={isSubmitting}
+                >
                   <span className="relative z-10 flex items-center justify-center gap-2">
-                    <Send className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" size={18} />
-                    Send Message
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="animate-spin" size={18} />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" size={18} />
+                        Send Message
+                      </>
+                    )}
                   </span>
                   <div className="absolute inset-0 bg-gradient-to-r from-secondary to-accent opacity-0 group-hover:opacity-100 transition-opacity" />
                 </Button>
